@@ -129,8 +129,9 @@ function prepareForwardedRequest(
 		headers.set("host", `${svc.host}:${svc.port}`);
 	}
 
-	if (req.headers.has("origin") && !headers.has("origin")) {
-		headers.set("origin", req.headers.get("origin")!);
+	const origin = req.headers.get("origin");
+	if (origin) {
+		headers.set("origin", origin);
 	}
 
 	const originalXFF = req.headers.get("x-forwarded-for");

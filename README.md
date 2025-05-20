@@ -60,6 +60,15 @@ $ bun start
 ...
 ```
 
+4. Run lint and format
+
+```bash
+bun x biome check .
+bun x biome format . --write
+```
+
+## License
+
 Copyright 2025, Max Base
 
 License MIT

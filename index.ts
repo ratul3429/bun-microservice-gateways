@@ -1,3 +1,12 @@
+/**
+ * 
+ * @Name: bun-microservice-gateways
+ * @Author: Max Base
+ * @Date: 05/20/2025
+ * @Repository: https://github.com/basemax/bun-microservice-gateways
+ * 
+ */
+
 // --- TYPES ---
 type HttpMethod =
 	| "GET"
@@ -329,8 +338,8 @@ async function startServer() {
 }
 
 // --- STDIN COMMAND HANDLER ---
-const reader = Bun.stdin.stream().getReader();
 async function readStdin() {
+    const reader = Bun.stdin.stream().getReader();
 	try {
 		while (true) {
 			const { value, done } = await reader.read();

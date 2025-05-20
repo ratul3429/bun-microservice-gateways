@@ -1,8 +1,10 @@
 // --- TYPES ---
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
+
 interface ServiceConfig {
   prefix?: string;
   path?: string;
-  method?: string;
+  method?: HttpMethod;
   host: string;
   port: number;
   active?: boolean;
@@ -16,20 +18,35 @@ interface Config {
 }
 
 // --- LOGGING ---
+enum LogLevel {
+  DEBUG = 1,
+  INFO = 2,
+  ERROR = 3,
+}
+
+let currentLogLevel = LogLevel.INFO;
+
 function formatLog(level: string, emoji: string, message: string) {
-  return `${emoji} [${level} ${new Date().toISOString()}] ${message}`;
+  return `${emoji} [${level.padEnd(5)} ${new Date().toISOString()}] ${message}`;
+}
+
+function log(level: LogLevel, emoji: string, message: string) {
+  if (level >= currentLogLevel) {
+    const levelStr = LogLevel[level];
+    console.log(formatLog(levelStr, emoji, message));
+  }
 }
 
 function logDebug(message: string) {
-  if (DEBUG) console.log(formatLog("DEBUG", "🐛", message));
+  log(LogLevel.DEBUG, "🐛", message);
 }
 
 function logInfo(message: string) {
-  console.log(formatLog("INFO", "📡", message));
+  log(LogLevel.INFO, "📡", message);
 }
 
 function logError(message: string) {
-  console.error(formatLog("ERROR", "❌", message));
+  log(LogLevel.ERROR, "❌", message);
 }
 
 // --- CONFIG LOADING ---
@@ -41,11 +58,12 @@ async function loadConfig(): Promise<Config> {
 
   cfg.services = cfg.services.map((svc: ServiceConfig) => ({
     ...svc,
-    method: svc.method?.toUpperCase(),
+    method: svc.method?.toUpperCase() as HttpMethod,
     active: svc.active !== false,
   }));
 
   DEBUG = cfg.debug ?? false;
+  currentLogLevel = DEBUG ? LogLevel.DEBUG : LogLevel.INFO;
 
   console.clear();
   logInfo("🔁 Configuration loaded");
@@ -67,14 +85,19 @@ async function loadConfig(): Promise<Config> {
 }
 
 // --- UTILITIES ---
+const hopByHopHeaders = [
+  "connection", "keep-alive", "proxy-authenticate",
+  "proxy-authorization", "te", "trailers",
+  "transfer-encoding", "upgrade"
+];
+
 function sanitizeHeaders(headers: Headers): Headers {
-  const sanitized = new Headers(headers);
-  const hopByHopHeaders = [
-    "connection", "keep-alive", "proxy-authenticate",
-    "proxy-authorization", "te", "trailers",
-    "transfer-encoding", "upgrade"
-  ];
-  hopByHopHeaders.forEach(h => sanitized.delete(h));
+  const sanitized = new Headers();
+  headers.forEach((value, key) => {
+    if (!hopByHopHeaders.includes(key.toLowerCase())) {
+      sanitized.append(key, value);
+    }
+  });
   return sanitized;
 }
 
@@ -90,7 +113,9 @@ function prepareForwardedRequest(req: Request, svc: ServiceConfig, targetUrl: st
     headers.set("host", `${svc.host}:${svc.port}`);
   }
 
-  headers.set("origin", `http://${svc.host}:${svc.port}`);
+  if (req.headers.has("origin") && !headers.has("origin")) {
+    headers.set("origin", req.headers.get("origin")!);
+  }
 
   const originalXFF = req.headers.get("x-forwarded-for");
   const clientIp = req.headers.get("cf-connecting-ip") || "unknown";
@@ -120,15 +145,19 @@ async function forwardRequest(req: Request, svc: ServiceConfig): Promise<Respons
     });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.stack || error.message : String(error);
-    logError(`💥 Failed to forward to ${targetUrl}: ${errMsg}`);
+    if (DEBUG) {
+      logError(`💥 Failed to forward to ${targetUrl}: ${errMsg}`);
+    } else {
+      logError(`💥 Failed to forward to ${targetUrl}: ${error instanceof Error ? error.message : String(error)}`);
+    }
     return new Response("Bad Gateway", { status: 502 });
   }
 }
 
 function matchService(req: Request): ServiceConfig | undefined {
   const reqUrl = new URL(req.url);
-  const pathname = reqUrl.pathname;
-  const method = req.method.toUpperCase();
+  const pathname = reqUrl.pathname === "/" ? "/" : reqUrl.pathname.replace(/\/+$/, "");
+  const method = req.method.toUpperCase() as HttpMethod;
 
   const exactMatch = config.services.find(
     svc => svc.active && svc.path === pathname && svc.method === method
@@ -176,9 +205,9 @@ async function startServer() {
 
   logInfo(`🚀 Gateway listening on http://${config.host}:${config.port}`);
 
-  process.on("SIGINT", () => {
+  process.on("SIGINT", async () => {
     logInfo("🛑 Received SIGINT. Shutting down...");
-    server.stop();
+    await server.stop();
     process.exit(0);
   });
 
@@ -188,19 +217,23 @@ async function startServer() {
 // --- STDIN COMMAND HANDLER ---
 const reader = Bun.stdin.stream().getReader();
 async function readStdin() {
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    const command = new TextDecoder().decode(value).trim();
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const command = new TextDecoder().decode(value).trim();
 
-    logInfo(`📥 [STDIN] Received command: ${command}`);
-    if (command === "r") {
-      logInfo("🔄 Reloading configuration on command...");
-      config = await loadConfig();
-      logInfo("🔁 Configuration reloaded");
-    } else {
-      logError(`❌ Unknown command: ${command}`);
+      logInfo(`📥 [STDIN] Received command: ${command}`);
+      if (command === "r") {
+        logInfo("🔄 Reloading configuration on command...");
+        config = await loadConfig();
+        logInfo("🔁 Configuration reloaded");
+      } else {
+        logError(`❌ Unknown command: ${command}`);
+      }
     }
+  } catch (err) {
+    logError(`❌ Error reading stdin: ${(err as Error).message}`);
   }
 }
 

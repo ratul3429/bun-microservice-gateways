@@ -11,7 +11,13 @@ type HttpMethod =
 type HttpMethodValue = HttpMethod | HttpMethod[] | "*";
 
 const VALID_METHODS: HttpMethod[] = [
-	"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
+	"GET",
+	"POST",
+	"PUT",
+	"DELETE",
+	"PATCH",
+	"OPTIONS",
+	"HEAD",
 ];
 
 interface ServiceConfig {
@@ -66,41 +72,84 @@ function logError(message: string) {
 let config: Config;
 let DEBUG = false;
 
+function validateServiceConfig(svc: any, index: number): ServiceConfig {
+	const errors: string[] = [];
+
+	if (typeof svc.host !== "string" || !svc.host) {
+		errors.push(`Service ${index + 1}: "host" must be a non-empty string`);
+	}
+
+	if (typeof svc.port !== "number" || svc.port <= 0) {
+		errors.push(`Service ${index + 1}: "port" must be a positive number`);
+	}
+
+	let method: HttpMethodValue | undefined = svc.method;
+
+	if (typeof method === "string") {
+		if (method === "*") {
+			method = "*";
+		} else if (VALID_METHODS.includes(method.toUpperCase() as HttpMethod)) {
+			method = method.toUpperCase() as HttpMethod;
+		} else {
+			errors.push(`Service ${index + 1}: Invalid method "${method}"`);
+		}
+	} else if (Array.isArray(method)) {
+		const upperMethods = method.map((m) => m.toUpperCase());
+		const invalids = upperMethods.filter(
+			(m) => !VALID_METHODS.includes(m as HttpMethod),
+		);
+		if (invalids.length > 0) {
+			errors.push(
+				`Service ${index + 1}: Invalid method(s) ${invalids.join(", ")}`,
+			);
+		} else {
+			method = upperMethods as HttpMethod[];
+		}
+	} else if (method !== undefined && method !== "*") {
+		errors.push(
+			`Service ${index + 1}: Unsupported method format: ${JSON.stringify(method)}`,
+		);
+	}
+
+	if (errors.length > 0) {
+		throw new Error(errors.join("; "));
+	}
+
+	return {
+		...svc,
+		method,
+		active: svc.active !== false,
+	};
+}
+
 async function loadConfig(): Promise<Config> {
 	const cfg = await Bun.file("config.json").json();
 
-    cfg.services = cfg.services.map((svc: ServiceConfig, index: number) => {
-        let method: HttpMethodValue | undefined = svc.method;
+	const topErrors: string[] = [];
+	if (typeof cfg.host !== "string" || !cfg.host) {
+		topErrors.push(`"host" must be a non-empty string`);
+	}
+	if (typeof cfg.port !== "number" || cfg.port <= 0) {
+		topErrors.push(`"port" must be a positive number`);
+	}
+	if (!Array.isArray(cfg.services)) {
+		topErrors.push(`"services" must be an array`);
+	}
 
-        if (typeof method === "string") {
-            if (method === "*") {
-                method = "*";
-            } else if (VALID_METHODS.includes(method.toUpperCase() as HttpMethod)) {
-                method = method.toUpperCase() as HttpMethod;
-            } else {
-                logError(`❌ [Service ${index + 1}] Invalid method: "${method}"`);
-                method = undefined;
-            }
-        } else if (Array.isArray(method)) {
-            const upperMethods = method.map(m => m.toUpperCase());
-            const invalids = upperMethods.filter(m => !VALID_METHODS.includes(m as HttpMethod));
-            if (invalids.length > 0) {
-                logError(`❌ [Service ${index + 1}] Invalid method(s): ${invalids.join(", ")}`);
-                method = undefined;
-            } else {
-                method = upperMethods as HttpMethod[];
-            }
-        } else if (method !== undefined && method !== "*") {
-            logError(`❌ [Service ${index + 1}] Unsupported method format: ${JSON.stringify(method)}`);
-            method = undefined;
-        }
+	if (topErrors.length > 0) {
+		throw new Error(topErrors.join("; "));
+	}
 
-        return {
-            ...svc,
-            method,
-            active: svc.active !== false,
-        };
-    });
+	try {
+		cfg.services = cfg.services.map((svc: ServiceConfig, i: number) =>
+			validateServiceConfig(svc, i),
+		);
+	} catch (validationError) {
+		logError(
+			`❌ Configuration validation error: ${(validationError as Error).message}`,
+		);
+		throw validationError;
+	}
 
 	DEBUG = cfg.debug ?? false;
 	currentLogLevel = DEBUG ? LogLevel.DEBUG : LogLevel.INFO;
@@ -114,7 +163,7 @@ async function loadConfig(): Promise<Config> {
 
 	cfg.services.forEach((svc: ServiceConfig, i: number) => {
 		const label = svc.path
-			? `path: ${svc.method} ${svc.path}`
+			? `path: ${Array.isArray(svc.method) ? svc.method.join(",") : svc.method} ${svc.path}`
 			: svc.prefix
 				? `prefix: ${svc.prefix}`
 				: "<no path or prefix>";
@@ -238,7 +287,12 @@ function matchService(req: Request): ServiceConfig | undefined {
 
 // --- SERVER SETUP ---
 async function startServer() {
-	config = await loadConfig();
+	try {
+		config = await loadConfig();
+	} catch (err) {
+		logError(`❌ Failed to load config: ${(err as Error).message}`);
+		process.exit(1);
+	}
 
 	const server = Bun.serve({
 		hostname: config.host,

@@ -5,6 +5,7 @@ interface ServiceConfig {
   method?: string;
   host: string;
   port: number;
+  active?: boolean;
 }
 
 interface Config {
@@ -14,21 +15,38 @@ interface Config {
   debug?: boolean;
 }
 
-// GLOBALS
-const config: Config = await Bun.file("config.json").json();
-const DEBUG = config.debug ?? false;
+// CONFIG LOADING
+let config: Config = await loadConfig();
+let DEBUG = config.debug ?? false;
+
+async function loadConfig(): Promise<Config> {
+  const cfg = await Bun.file("config.json").json();
+  console.clear();
+  logInfo("🔁 Configuration loaded");
+
+  logInfo(`🚀 Starting Gateway on http://${cfg.host}:${cfg.port}`);
+  logInfo(`🔧 Debug mode: ${(cfg.debug ?? false) ? "ON" : "OFF"}`);
+  logInfo(`📦 Loaded ${cfg.services.length} services:`);
+
+  cfg.services.forEach((svc: ServiceConfig, i: number) => {
+    const label = svc.path ? `path: ${svc.method} ${svc.path}` : `prefix: ${svc.prefix}`;
+    logInfo(`  ${i + 1}. ${label} => ${svc.host}:${svc.port}`);
+  });
+
+  return cfg;
+}
 
 // LOGGING
 function logDebug(message: string) {
-  if (DEBUG) console.log(`🐛 [DEBUG] ${message}`);
+  if (DEBUG) console.log(`🐛 [DEBUG ${new Date().toISOString()}] ${message}`);
 }
 
 function logInfo(message: string) {
-  console.log(`📡 [INFO] ${message}`);
+  console.log(`📡 [INFO ${new Date().toISOString()}] ${message}`);
 }
 
 function logError(message: string) {
-  console.error(`❌ [ERROR] ${message}`);
+  console.error(`❌ [ERROR ${new Date().toISOString()}] ${message}`);
 }
 
 // UTILITIES
@@ -65,20 +83,19 @@ function prepareForwardedRequest(req: Request, svc: ServiceConfig, targetUrl: st
 
 async function forwardRequest(req: Request, svc: ServiceConfig): Promise<Response> {
   const targetUrl = buildTargetUrl(req, svc);
-  logDebug(`Forwarding request to: ${targetUrl}`);
+  logDebug(`➡️ Forwarding request to: ${targetUrl}`);
 
   try {
     const forwardedReq = prepareForwardedRequest(req, svc, targetUrl);
     const response = await fetch(forwardedReq);
-    logDebug(`Received response: ${response.status} ${response.statusText}`);
-
+    logDebug(`⬅️ Received ${response.status} from ${svc.host}:${svc.port}`);
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
       headers: response.headers,
     });
   } catch (error) {
-    logError(`Gateway error while forwarding to ${targetUrl}: ${error}`);
+    logError(`💥 Failed to forward to ${targetUrl}: ${error}`);
     return new Response("Bad Gateway", { status: 502 });
   }
 }
@@ -89,38 +106,63 @@ function matchService(req: Request): ServiceConfig | undefined {
   const method = req.method.toUpperCase();
 
   const exactMatch = config.services.find(
-    (svc) => svc.path === pathname && svc.method === method
+    (svc) => svc.active !== false && svc.path === pathname && svc.method === method
   );
   if (exactMatch) {
-    logDebug(`Matched exact route: ${method} ${pathname}`);
+    logDebug(`✅ Exact match: ${method} ${pathname}`);
     return exactMatch;
   }
 
   const prefixMatch = config.services.find(
-    (svc) => svc.prefix && pathname.startsWith(svc.prefix)
+    (svc) => svc.active !== false && svc.prefix && pathname.startsWith(svc.prefix)
   );
   if (prefixMatch) {
-    logDebug(`Matched prefix route: ${pathname} starts with ${prefixMatch.prefix}`);
+    logDebug(`🔎 Prefix match: ${pathname} starts with ${prefixMatch.prefix}`);
     return prefixMatch;
   }
 
-  logDebug(`No matching service found for: ${method} ${pathname}`);
+  logDebug(`❓ No match found for ${method} ${pathname}`);
   return undefined;
 }
 
-// INIT
-logInfo(`Loaded config with ${config.services.length} services`);
-logInfo(`Gateway starting on http://${config.host}:${config.port}`);
-
-const server = Bun.serve({
+// Server
+Bun.serve({
   hostname: config.host,
   port: config.port,
   async fetch(req: Request) {
-    logDebug(`Incoming request: ${req.method} ${new URL(req.url).pathname}`);
-    const svc = matchService(req);
+    const url = new URL(req.url);
+    const pathname = url.pathname;
 
+    logDebug(`📥 Incoming: ${req.method} ${pathname}`);
+
+    // Health check route
+    if (pathname === "/__health") {
+      return new Response("✅ Gateway is healthy", { status: 200 });
+    }
+
+    const svc = matchService(req);
     if (svc) return forwardRequest(req, svc);
 
-    return new Response("Not Found", { status: 404 });
-  },
+    return new Response("❌ Not Found", { status: 404 });
+  }
 });
+
+// Reload config with 'r' key
+const reader = Bun.stdin.stream().getReader();
+async function readStdin() {
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const command = new TextDecoder().decode(value).trim();
+
+    console.log(`📥 [STDIN] Received chunk: ${command}`);
+    if (command === "r") {
+      logInfo("🔄 Reloading configuration...");
+      config = await loadConfig();
+      logInfo("🔁 Configuration reloaded");
+    } else {
+      logError(`❌ Unknown command: ${command}`);
+    }
+  }
+}
+readStdin();

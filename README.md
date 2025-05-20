@@ -1,24 +1,29 @@
 # bun-microservice-gateways
 
-## Install
+A blazing fast, configurable gateway built with [Bun](https://bun.sh), designed to forward HTTP requests to internal microservices based on path or prefix. Ideal for lightweight setups and local development.
 
+## 🛠 Features
+
+- ⚡ Built with [Bun](https://bun.sh)
+- ✅ TypeScript-first
+- 🔁 Hot config reload via CLI command (`r`)
+- 🧠 Smart routing based on:
+  - Exact path and method
+  - Prefix matching
+- 🩺 Built-in health check (`/__health`)
+- 🪵 Structured logging (INFO, DEBUG, ERROR)
+
+---
+
+## 📦 Installation
+
+```bash
+bun install
 ```
-$ bun install
-```
 
-## Features
+## ⚙️ Configuration
 
-- Bun
-- Super fast
-- Typescript
-- many more...
-
-
-Note: We have a feature to reload routes, feel free to just type `r` and enter in the CLI, to reload the gateway easily without needs to stopping and restarting to decrease the down time...
-
-## Config
-
-`config.json` file:
+Create a `config.json` file in the root directory with the following structure:
 
 ```json
 {
@@ -41,39 +46,69 @@ Note: We have a feature to reload routes, feel free to just type `r` and enter i
 }
 ```
 
-## Running
+## 🔍 Matching Logic
+
+- `path + method`: Exact match
+- `prefix`: Requests matching the prefix (e.g., /api/user/...) will be routed accordingly.
+
+## 🚀 Running the Gateway
+
+```bash
+bun start
+```
+
+Example output:
 
 ```
-$ bun start
-📡 [INFO  2025-05-20T07:58:19.296Z] 🔁 Configuration loaded
-📡 [INFO  2025-05-20T07:58:19.297Z] 🚀 Starting Gateway on http://0.0.0.0:9999
-📡 [INFO  2025-05-20T07:58:19.297Z] 🔧 Debug mode: ON
-📡 [INFO  2025-05-20T07:58:19.297Z] 📦 Loaded 2 services:
-📡 [INFO  2025-05-20T07:58:19.298Z]   1. prefix: /user/ => localhost:8888
-📡 [INFO  2025-05-20T07:58:19.298Z]   2. path: POST /my/login/ => localhost:6666
-📡 [INFO  2025-05-20T07:58:19.305Z] 🚀 Gateway listening on http://0.0.0.0:9999
-🐛 [DEBUG 2025-05-20T07:58:39.576Z] 📥 Incoming: GET /
-🐛 [DEBUG 2025-05-20T07:58:39.577Z] ❓ No match found for GET /
-🐛 [DEBUG 2025-05-20T07:58:41.671Z] 📥 Incoming: GET /__health
-🐛 [DEBUG 2025-05-20T07:58:47.029Z] 📥 Incoming: GET /404
-🐛 [DEBUG 2025-05-20T07:58:47.029Z] ❓ No match found for GET /404
+📡 [INFO  ] 🔁 Configuration loaded
+📡 [INFO  ] 🚀 Starting Gateway on http://0.0.0.0:9999
+📡 [INFO  ] 🔧 Debug mode: ON
+📡 [INFO  ] 📦 Loaded 2 services:
+📡 [INFO  ]   1. prefix: /user/ => localhost:8888
+📡 [INFO  ]   2. path: POST /my/login/ => localhost:6666
+📡 [INFO  ] 🚀 Gateway listening on http://0.0.0.0:9999
 ...
 ```
 
-4. Run lint and format
+## 🧪 Health Check
+
+Send a request to:
+
+```bash
+GET /__health
+```
+
+Response:
+
+```
+✅ Gateway is healthy
+```
+
+## 🔄 Hot Reload
+To reload the configuration without restarting the gateway:
+
+Open the terminal running the gateway.
+
+Type r and press Enter.
+
+This will re-read config.json and apply changes immediately with minimal downtime.
+
+## 🧹 Lint & Format
 
 ```bash
 bun lint
 bun format
+```
 
-or
+Or using biome:
 
+```bash
 bun x biome check .
 bun x biome format . --write
 ```
 
-## License
+## 📄 License
 
-Copyright 2025, Max Base
+MIT License
 
-License MIT
+© 2025 Max Base

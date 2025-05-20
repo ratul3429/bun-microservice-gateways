@@ -8,10 +8,16 @@ type HttpMethod =
 	| "OPTIONS"
 	| "HEAD";
 
+type HttpMethodValue = HttpMethod | HttpMethod[] | "*";
+
+const VALID_METHODS: HttpMethod[] = [
+	"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
+];
+
 interface ServiceConfig {
 	prefix?: string;
 	path?: string;
-	method?: HttpMethod;
+	method?: HttpMethodValue;
 	host: string;
 	port: number;
 	active?: boolean;
@@ -63,11 +69,38 @@ let DEBUG = false;
 async function loadConfig(): Promise<Config> {
 	const cfg = await Bun.file("config.json").json();
 
-	cfg.services = cfg.services.map((svc: ServiceConfig) => ({
-		...svc,
-		method: svc.method?.toUpperCase() as HttpMethod,
-		active: svc.active !== false,
-	}));
+    cfg.services = cfg.services.map((svc: ServiceConfig, index: number) => {
+        let method: HttpMethodValue | undefined = svc.method;
+
+        if (typeof method === "string") {
+            if (method === "*") {
+                method = "*";
+            } else if (VALID_METHODS.includes(method.toUpperCase() as HttpMethod)) {
+                method = method.toUpperCase() as HttpMethod;
+            } else {
+                logError(`❌ [Service ${index + 1}] Invalid method: "${method}"`);
+                method = undefined;
+            }
+        } else if (Array.isArray(method)) {
+            const upperMethods = method.map(m => m.toUpperCase());
+            const invalids = upperMethods.filter(m => !VALID_METHODS.includes(m as HttpMethod));
+            if (invalids.length > 0) {
+                logError(`❌ [Service ${index + 1}] Invalid method(s): ${invalids.join(", ")}`);
+                method = undefined;
+            } else {
+                method = upperMethods as HttpMethod[];
+            }
+        } else if (method !== undefined && method !== "*") {
+            logError(`❌ [Service ${index + 1}] Unsupported method format: ${JSON.stringify(method)}`);
+            method = undefined;
+        }
+
+        return {
+            ...svc,
+            method,
+            active: svc.active !== false,
+        };
+    });
 
 	DEBUG = cfg.debug ?? false;
 	currentLogLevel = DEBUG ? LogLevel.DEBUG : LogLevel.INFO;

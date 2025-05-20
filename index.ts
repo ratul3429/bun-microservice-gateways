@@ -135,7 +135,6 @@ Bun.serve({
 
     logDebug(`📥 Incoming: ${req.method} ${pathname}`);
 
-    // Health check route
     if (pathname === "/__health") {
       return new Response("✅ Gateway is healthy", { status: 200 });
     }

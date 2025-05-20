@@ -63,6 +63,11 @@ $ bun start
 4. Run lint and format
 
 ```bash
+bun lint
+bun format
+
+or
+
 bun x biome check .
 bun x biome format . --write
 ```

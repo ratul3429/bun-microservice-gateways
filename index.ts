@@ -72,7 +72,10 @@ function logError(message: string) {
 let config: Config;
 let DEBUG = false;
 
-function validateServiceConfig(svc: any, index: number): ServiceConfig {
+function validateServiceConfig(
+	svc: ServiceConfig,
+	index: number,
+): ServiceConfig {
 	const errors: string[] = [];
 
 	if (typeof svc.host !== "string" || !svc.host) {

@@ -232,7 +232,7 @@ async function readStdin() {
         logError(`❌ Unknown command: ${command}`);
       }
     }
-  } catch (err) {
+  } catch (err: unknown) {
     logError(`❌ Error reading stdin: ${(err as Error).message}`);
   }
 }

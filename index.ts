@@ -1,10 +1,10 @@
 /**
- * 
+ *
  * @Name: bun-microservice-gateways
  * @Author: Max Base
  * @Date: 05/20/2025
  * @Repository: https://github.com/basemax/bun-microservice-gateways
- * 
+ *
  */
 
 // --- TYPES ---
@@ -277,8 +277,20 @@ function matchService(req: Request): ServiceConfig | undefined {
 		reqUrl.pathname === "/" ? "/" : reqUrl.pathname.replace(/\/+$/, "");
 	const method = req.method.toUpperCase() as HttpMethod;
 
+	function methodMatches(
+		svcMethod: HttpMethodValue | undefined,
+		reqMethod: HttpMethod,
+	): boolean {
+		if (!svcMethod) return true;
+		if (svcMethod === "*") return true;
+		if (typeof svcMethod === "string") return svcMethod === reqMethod;
+		if (Array.isArray(svcMethod)) return svcMethod.includes(reqMethod);
+		return false;
+	}
+
 	const exactMatch = config.services.find(
-		(svc) => svc.active && svc.path === pathname && svc.method === method,
+		(svc) =>
+			svc.active && svc.path === pathname && methodMatches(svc.method, method),
 	);
 	if (exactMatch) {
 		logDebug(`✅ Exact match: ${method} ${pathname}`);
@@ -286,7 +298,11 @@ function matchService(req: Request): ServiceConfig | undefined {
 	}
 
 	const prefixMatch = config.services.find(
-		(svc) => svc.active && svc.prefix && pathname.startsWith(svc.prefix),
+		(svc) =>
+			svc.active &&
+			svc.prefix &&
+			pathname.startsWith(svc.prefix) &&
+			methodMatches(svc.method, method),
 	);
 	if (prefixMatch) {
 		logDebug(`🔎 Prefix match: ${pathname} starts with ${prefixMatch.prefix}`);
@@ -339,7 +355,7 @@ async function startServer() {
 
 // --- STDIN COMMAND HANDLER ---
 async function readStdin() {
-    const reader = Bun.stdin.stream().getReader();
+	const reader = Bun.stdin.stream().getReader();
 	try {
 		while (true) {
 			const { value, done } = await reader.read();

